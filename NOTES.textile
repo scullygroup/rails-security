@@ -1,0 +1,101 @@
+h1.  Rails Security Tips
+
+
+h3.  Filter Log Params
+
+* By default, all params passed within a Rails model are logged
+* Best practice is to use filter_parameter_logging
+* This is built-in to Rails
+* To filter the password field in standard user authentication, state the following in application_controller.rb
+<pre><code>filter_parameter_logging :password</code></pre>
+
+h3.  Cross-site Request Forgery Protection
+
+Protect agains cross-site forgery by ensuring that this line exists in application_controller.rb
+<pre><code>
+  protect_from_forgery
+</code></pre>
+
+* Inside the form element Rails automatically adds a hidden field called authenticity_token.
+* This field’s value is a key that is unique for each user’s session and is based on a random string stored in the session. 
+* Rails will automatically check this key for every single POST, PUT or DELETE request that is made
+* Ensures that the request is made by a user who is actually on our site, rather than by another site pretending to be that user.
+* This token is not checked for GET requests so we need to make sure that GET requests can not change or delete our application’s data.
+
+h3.  SQL injection
+
+* SQL injection is a common tactic used by malicious users to compromise a database
+* Poorly written controller actions can allow a user to see unauthorized data, or modify the database
+
+This is BAD:
+<pre><code>@users = User.all(:conditions => "name LIKE '%#{params[:search]}%'")</code></pre>
+This is GOOD:
+<pre><code>@users = User.all(:conditions => ["name LIKE ?", "%#{params[:search]}%"])</code></pre>
+
+Why:
+* Passes the condition as an array rather than as a string
+* Quotes the parameter and escapes any special characters
+
+h3.  HTML injection
+
+* Rails has a built-in h method used to escape HTML
+* Prevents inline HTML from executing
+
+Example:
+<pre><code>
+  <script>
+    alert("You've been Hacked!")
+  </script>
+</code></pre>
+  
+* Rails 3 will automatically escape content on the page making the h method unnecessary
+* When using a CMS, it is necessary to show html content
+
+An alternative to the h method is to use sanitize
+<pre><code>
+  <%= sanitize @article.body %>
+  <%= sanitize @article.body, :tags => %w(p br table tr td), :attributes => %w(id class style) %>
+</code></pre>
+
+Or setup defaults in your environment.rb file
+<pre><code>
+  Rails::Initializer.run do |config|
+    config.action_view.sanitized_allowed_tags = 'p', 'br', 'strong', table', 'tr', 'td'
+  end
+</code></pre>
+
+h3.  File Uploads
+
+* Using paperclip with the minimum default options, a user can upload any type of file.
+* File uploads are one of the biggest security threats to any app
+* This is BAD !!
+* Consider a simple upload of phpinfo.php
+* Imagine if this was a malicious PHP or Javascript code!
+* Tighten up your model by only allowing specific files to be uploaded.
+
+Note:  When using ImageMagick to resize an upload, it seems to fail unless the upload is an image.
+
+
+h3.  Mass Assignment
+
+* Only allow the editing of necessary fields
+* Access to other fields (such as foreign keys) can lead to data being compromised
+* A malicious user can use curl to issue a command to the server to alter data
+* Example, the name of the Group a user belongs to can be altered since there is a one-to-many relationship in the model
+* This can be exploited using update_attributes when performing an update action
+
+In script/console:
+<pre><code>
+@group = Group.first
+@group.users
+@group.update_attributes(:user_ids => [12])
+@group.users
+</code></pre>
+
+Unfortunate for us, this is very insecure since anyone with knowledge of using curl can pass this update to the web app.  To fix this, we need to define attr_accessible for the Group model.
+
+h3. Further Reading
+
+* "Railscasts: 7 Security Tips":"http://railscasts.com/episodes/178-seven-security-tips"
+* "Railscasts: Hackers Love Mass Assignment":"http://railscasts.com/episodes/26-hackers-love-mass-assignment"
+* "Railscasts: SQL Injection":"http://railscasts.com/episodes/25-sql-injection"

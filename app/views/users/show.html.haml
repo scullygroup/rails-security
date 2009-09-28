@@ -1,0 +1,25 @@
+- title "Users"
+
+%p
+  %strong
+    Name:
+  =h @user.name
+    
+%p
+  %strong
+    Email:
+  = @user.email
+%p
+  %strong
+    Group:
+  = @user.group.name
+%p
+  %strong
+    Avatar
+  %br
+  = image_tag @user.avatar.url
+  
+%p
+  = link_to "Edit", edit_user_path(@user)
+  |
+  = link_to "Destroy", @user, :confirm => 'Are you sure?', :method => :delete

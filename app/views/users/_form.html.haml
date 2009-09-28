@@ -1,0 +1,28 @@
+- form_for @user, :html => { :multipart => true } do |f|
+  = f.error_messages
+  %p
+    = f.label :name
+    %br
+    = f.text_field :name
+  %p
+    = f.label :email
+    %br
+    = f.text_field :email
+  %p
+    = f.label :avatar
+    = f.file_field :avatar
+    
+  %p
+    %strong
+      Assign to a Group
+    %br
+    - for group in Group.all
+      = f.radio_button :group_id, group.id
+      = f.label :group_id, "#{group.name}"
+      %br
+      
+  %p
+    = f.submit "Submit"
+
+  %p
+    = link_to "Back to List", users_path
